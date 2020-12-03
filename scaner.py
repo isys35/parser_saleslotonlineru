@@ -1,13 +1,12 @@
-import requests
 import csv
 from requests import Session
 import time
 from bs4 import BeautifulSoup
+import re
 from urllib.parse import quote
 
 HOST = 'https://sales.lot-online.ru/'
 URL = 'https://sales.lot-online.ru/e-auction/lots.xhtml'
-POST_URL = 'https://sales.lot-online.ru/e-auction/lots.xhtml'
 HEADERS = {
     "Accept": "application/xml, text/xml, */*; q=0.01",
     "Accept-Encoding": "gzip, deflate, br",
@@ -26,14 +25,19 @@ HEADERS = {
 DATA_FILE = 'data.csv'
 
 
-def save_page(response_str, file_name='page.html'):
-    with open(file_name, 'w', encoding='utf8') as html_file:
-        html_file.write(response_str)
-
-
 def parse_javax_faces_viewstate(soup):
     input = soup.find("input", id="j_id1:javax.faces.ViewState:0")
     return input['value']
+
+
+def uniq_data_list(lst):
+    finish_list = []
+    check_url = []
+    for el in lst:
+        if el[0] not in check_url:
+            finish_list.append(el)
+            check_url.append(el[0])
+    return finish_list
 
 
 def save_data(data):
@@ -41,9 +45,9 @@ def save_data(data):
         with open(DATA_FILE, 'r') as csv_file:
             reader = csv.reader(csv_file, delimiter=';')
             saved_urls = [el[0] for el in reader]
-        data_for_write = [el for el in data if el[0] not in saved_urls]
+        data_for_write = uniq_data_list([el for el in data if el[0] not in saved_urls])
     except FileNotFoundError:
-        data_for_write = data
+        data_for_write = uniq_data_list(data)
     with open(DATA_FILE, "a", newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=';')
         writer.writerows(data_for_write)
@@ -53,6 +57,8 @@ def parse_data(soup):
     data = []
     for el in soup.select('a.filed.filed-title'):
         url = 'https://sales.lot-online.ru/e-auction/' + el['href']
+        if 'jsessionid' in url:
+            url = re.sub(';jsessionid=(.+)\?', '?', url)
         unit_time = int(time.time())
         data.append([url, unit_time])
     return data
@@ -77,7 +83,7 @@ def parse_key(soup, page):
         return False
 
 
-if __name__ == '__main__':
+def parser():
     session = Session()
     response = session.get('https://sales.lot-online.ru/e-auction/lots.xhtml')
     soup = BeautifulSoup(response.text, 'lxml')
@@ -99,9 +105,12 @@ if __name__ == '__main__':
                         "&formMain%3AitLotNoticeNum=&formMain%3AitAuctionRegNum=&formMain%3AselectIndRightEnsure=2" \
                         "&formMain%3AselectIndPublish=1&javax.faces.ViewState={}"
         json_data = pre_json_data.format(quote(key), quote(key), quote(key), quote(key), javax_faces_viewstate)
-        response = session.post(POST_URL, data=json_data, headers=HEADERS)
-        save_page(response.text)
+        response = session.post(URL, data=json_data, headers=HEADERS)
         soup = BeautifulSoup(response.text, 'lxml')
         data = parse_data(soup)
         save_data(data)
         page += 1
+
+
+if __name__ == '__main__':
+    parser()
