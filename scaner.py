@@ -88,23 +88,34 @@ def parser():
     response = session.get('https://sales.lot-online.ru/e-auction/lots.xhtml')
     soup = BeautifulSoup(response.text, 'lxml')
     javax_faces_viewstate = parse_javax_faces_viewstate(soup)
-    data = parse_data(soup)
-    save_data(data)
-    page = 2
+    page = 1
     while True:
         print('Страница {}'.format(page))
-        key = parse_key(soup, page)
-        if not key:
-            break
-        pre_json_data = "javax.faces.partial.ajax=true&javax.faces.source={}&javax.faces.partial.execute={" \
-                        "}&javax.faces.partial.render=formMain%3ApanelList+formMain%3ALotListPaginatorID&{}={" \
-                        "}&formMain=formMain&formMain%3AinputServerTime=00%3A09%3A42&formMain%3AcommonSearchCriteriaStr" \
-                        "=&formMain%3Aj_idt82=&formMain%3AscmTypeAuctionId_focus=&formMain%3AscmSubjectRFId_focus" \
-                        "=&formMain%3AitKeyWords=&formMain%3AitTradeOrganizer=&formMain%3AauctionDatePlanBID_input" \
-                        "=&formMain%3AauctionDatePlanEID_input=&formMain%3AcostBValueB=0&formMain%3AcostBValueE=0" \
-                        "&formMain%3AitLotNoticeNum=&formMain%3AitAuctionRegNum=&formMain%3AselectIndRightEnsure=2" \
-                        "&formMain%3AselectIndPublish=1&javax.faces.ViewState={}"
-        json_data = pre_json_data.format(quote(key), quote(key), quote(key), quote(key), javax_faces_viewstate)
+        if page == 1:
+            pre_json_data = "javax.faces.partial.ajax=true&javax.faces.source=formMain%3AcbFilter&javax.faces.partial" \
+                            ".execute=formMain%3AcbFilter+formMain%3ApgFilterFields&javax.faces.partial.render" \
+                            "=formMain%3ApgFilterFields+formMain%3ApanelList+formMain%3ALotListPaginatorID+formMain" \
+                            "%3AlotListHeaderPanel&formMain%3AcbFilter=formMain%3AcbFilter&formMain=formMain&formMain" \
+                            "%3AinputServerTime=11%3A34%3A31&formMain%3AcommonSearchCriteriaStr=&formMain%3Aj_idt82" \
+                            "=&formMain%3AscmTypeAuctionId_focus=&formMain%3AscmSubjectRFId_focus=&formMain" \
+                            "%3AitKeyWords=&formMain%3AitTradeOrganizer=&formMain%3AauctionDatePlanBID_input" \
+                            "=&formMain%3AauctionDatePlanEID_input=&formMain%3AcostBValueB=0&formMain%3AcostBValueE=0" \
+                            "&formMain%3AitLotNoticeNum=&formMain%3AitAuctionRegNum=&formMain%3AselectIndRightEnsure" \
+                            "=2&formMain%3AselectIndPublish=1&javax.faces.ViewState={}"
+            json_data = pre_json_data.format(javax_faces_viewstate)
+        else:
+            key = parse_key(soup, page)
+            if not key:
+                break
+            pre_json_data = "javax.faces.partial.ajax=true&javax.faces.source={}&javax.faces.partial.execute={" \
+                            "}&javax.faces.partial.render=formMain%3ApanelList+formMain%3ALotListPaginatorID&{}={" \
+                            "}&formMain=formMain&formMain%3AinputServerTime=00%3A09%3A42&formMain%3AcommonSearchCriteriaStr" \
+                            "=&formMain%3Aj_idt82=&formMain%3AscmTypeAuctionId_focus=&formMain%3AscmSubjectRFId_focus" \
+                            "=&formMain%3AitKeyWords=&formMain%3AitTradeOrganizer=&formMain%3AauctionDatePlanBID_input" \
+                            "=&formMain%3AauctionDatePlanEID_input=&formMain%3AcostBValueB=0&formMain%3AcostBValueE=0" \
+                            "&formMain%3AitLotNoticeNum=&formMain%3AitAuctionRegNum=&formMain%3AselectIndRightEnsure=2" \
+                            "&formMain%3AselectIndPublish=1&javax.faces.ViewState={}"
+            json_data = pre_json_data.format(quote(key), quote(key), quote(key), quote(key), javax_faces_viewstate)
         response = session.post(URL, data=json_data, headers=HEADERS)
         soup = BeautifulSoup(response.text, 'lxml')
         data = parse_data(soup)
